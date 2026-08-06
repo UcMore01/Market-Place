@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="description" content="Marketplace - Buy and sell products online. Discover electronics, fashion, home goods, and more from trusted sellers.">
+    <meta name="keywords" content="marketplace, buy, sell, online shopping, products">
+    <meta name="author" content="Marketplace">
+
+  <title>Manage Content</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="admin_dashboard.php">Admin Panel</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav" aria-controls="adminNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="adminNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="admin_dashboard.php">Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="admin_manage_users.php">Users</a></li>
+        <li class="nav-item"><a class="nav-link" href="admin_manage_sellers.php">Sellers</a></li>
+        <li class="nav-item"><a class="nav-link" href="admin_manage_products.php">Products</a></li>
+        <li class="nav-item"><a class="nav-link" href="admin_manage_orders.php">Orders</a></li>
+        <li class="nav-item"><a class="nav-link" href="admin_manage_content.php">Content</a></li>
+        <li class="nav-item"><a class="nav-link" href="admin_site_settings.php">Settings</a></li>
+        <li class="nav-item"><a class="nav-link" href="admin_manage_categories.html">Categories</a></li>
+        <li class="nav-item"><a class="nav-link" href="admin_blog/index.php">Blog</a></li>
+      </ul>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link text-danger" href="admin_api/logout.php">Logout</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<script>
+  // Highlight the current page in the navbar
+  (function() {
+    var path = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(function(link) {
+      if (link.getAttribute('href') === path) {
+        link.classList.add('active');
+      }
+    });
+  })();
+</script>
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="mb-0">Manage Content</h1>
+      <a href="pages.php" class="btn btn-outline-secondary btn-sm" target="_blank">View Public Pages</a>
+    </div>
+
+    <div id="content-alert"></div>
+
+    <div class="mb-3">
+      <button class="btn btn-primary" onclick="showContentModal()">Add Content</button>
+    </div>
+
+    <div id="content-management"></div>
+  </div>
+
+  <!-- Content Modal (reused for add & edit) -->
+  <div class="modal fade" id="contentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="contentForm">
+          <div class="modal-header">
+            <h5 class="modal-title" id="contentModalTitle">Add Content</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div id="contentFormAlert"></div>
+            <input type="hidden" id="contentId">
+            <div class="row mb-3">
+              <div class="col-md-6">
+                <label class="form-label">Type</label>
+                <select class="form-select" id="contentType" required>
+                  <option value="banner">Banner</option>
+                  <option value="blog">Blog</option>
+                  <option value="page">Page</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="contentStatus">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Title</label>
+              <input type="text" class="form-control" id="contentTitle" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Image <small class="text-muted">(optional)</small></label>
+              <input type="file" class="form-control" id="contentImageFile" accept="image/*">
+              <small class="text-muted">Upload an image, or paste an image URL below.</small>
+              <input type="text" class="form-control mt-2" id="contentImage" placeholder="https://... (or leave blank if uploading)">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Body <small class="text-muted">(HTML allowed)</small></label>
+              <textarea class="form-control" id="contentBody" rows="6"></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Sort Order</label>
+              <input type="number" class="form-control" id="contentSort" value="0">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      let contentMap = {};
+
+      function showAlert(message, type) {
+        document.getElementById('content-alert').innerHTML =
+          `<div class="alert alert-${type}">${message}</div>`;
+        setTimeout(() => { document.getElementById('content-alert').innerHTML = ''; }, 4000);
+      }
+
+      function fetchContent() {
+        fetch('admin_content/list.php')
+          .then(res => res.json())
+          .then(renderContent)
+          .catch(() => {
+            document.getElementById('content-management').innerHTML = '<div class="alert alert-danger">Error loading content.</div>';
+          });
+      }
+
+      function renderContent(contents) {
+        if (!contents.length) {
+          document.getElementById('content-management').innerHTML =
+            '<div class="alert alert-info">No content yet. Click "Add Content" to create one.</div>';
+          return;
+        }
+        contentMap = {};
+        let rows = contents.map(content => {
+          contentMap[content.id] = content;
+          const viewLink = content.type === 'page'
+            ? `<a class="btn btn-sm btn-info" href="page.php?id=${content.id}" target="_blank">View</a>`
+            : '';
+          return `
+            <tr>
+              <td>${content.id}</td>
+              <td>${escapeHtml(content.type)}</td>
+              <td>${escapeHtml(content.title)}</td>
+              <td>${content.image_url ? `<img src="${escapeAttr(content.image_url)}" style="width:50px;">` : ''}</td>
+              <td><span class="badge bg-${content.status === 'active' ? 'success' : 'secondary'}">${escapeHtml(content.status)}</span></td>
+              <td>
+                <button class="btn btn-warning btn-sm" onclick="showContentModal(${content.id})">Edit</button>
+                ${viewLink}
+                <button class="btn btn-danger btn-sm" onclick="deleteContent(${content.id})">Delete</button>
+              </td>
+            </tr>`;
+        }).join('');
+
+        document.getElementById('content-management').innerHTML = `
+          <table class="table table-bordered">
+            <thead>
+              <tr><th>ID</th><th>Type</th><th>Title</th><th>Image</th><th>Status</th><th>Actions</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+      }
+
+      window.showContentModal = function (id) {
+        const c = id ? contentMap[id] : null;
+        document.getElementById('contentFormAlert').innerHTML = '';
+        document.getElementById('contentModalTitle').textContent = c ? 'Edit Content' : 'Add Content';
+        document.getElementById('contentId').value = c ? c.id : '';
+        document.getElementById('contentType').value = c ? c.type : 'banner';
+        document.getElementById('contentStatus').value = c ? c.status : 'active';
+        document.getElementById('contentImageFile').value = '';
+        document.getElementById('contentTitle').value = c ? c.title : '';
+        document.getElementById('contentImage').value = c ? (c.image_url || '') : '';
+        document.getElementById('contentBody').value = c ? (c.body || '') : '';
+        document.getElementById('contentSort').value = c ? (c.sort_order || 0) : 0;
+        new bootstrap.Modal(document.getElementById('contentModal')).show();
+      };
+
+      document.getElementById('contentForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const alertBox = document.getElementById('contentFormAlert');
+        alertBox.innerHTML = '';
+        const id = document.getElementById('contentId').value;
+        const fileInput = document.getElementById('contentImageFile');
+        const urlField = document.getElementById('contentImage').value.trim();
+
+        function saveContent(imageUrl) {
+          const data = new URLSearchParams({
+            type: document.getElementById('contentType').value,
+            title: document.getElementById('contentTitle').value.trim(),
+            image_url: imageUrl,
+            body: document.getElementById('contentBody').value,
+            status: document.getElementById('contentStatus').value,
+            sort_order: document.getElementById('contentSort').value
+          });
+          let url = 'admin_content/add.php';
+          if (id) {
+            url = 'admin_content/edit.php';
+            data.append('id', id);
+          }
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: data.toString()
+          })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('contentModal')).hide();
+                fetchContent();
+                showAlert('Content saved.', 'success');
+              } else {
+                alertBox.innerHTML = '<div class="alert alert-danger">' + (data.error || 'Save failed.') + '</div>';
+              }
+            })
+            .catch(() => {
+              alertBox.innerHTML = '<div class="alert alert-danger">Network error.</div>';
+            });
+        }
+
+        if (fileInput.files && fileInput.files[0]) {
+          const fd = new FormData();
+          fd.append('image', fileInput.files[0]);
+          fetch('admin_content/upload_image.php', { method: 'POST', body: fd })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                saveContent(data.url);
+              } else {
+                alertBox.innerHTML = '<div class="alert alert-danger">' + (data.error || 'Upload failed.') + '</div>';
+              }
+            })
+            .catch(() => {
+              alertBox.innerHTML = '<div class="alert alert-danger">Network error during upload.</div>';
+            });
+        } else {
+          saveContent(urlField);
+        }
+      });
+
+      window.deleteContent = function (id) {
+        if (!confirm('Are you sure you want to delete this content?')) return;
+        fetch('admin_content/delete.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: 'id=' + encodeURIComponent(id)
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              fetchContent();
+              showAlert('Content deleted.', 'success');
+            } else {
+              showAlert(data.error || 'Delete failed.', 'danger');
+            }
+          })
+          .catch(() => showAlert('Network error.', 'danger'));
+      };
+
+      function escapeHtml(str) {
+        return String(str == null ? '' : str).replace(/[&<>"']/g, function (m) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+        });
+      }
+      function escapeAttr(str) {
+        return escapeHtml(str).replace(/`/g, '&#96;');
+      }
+
+      fetchContent();
+    });
+  </script>
+  <script src="auto_refresh.js"></script>
+</body>
+</html>

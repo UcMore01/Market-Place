@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Blog</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .table-responsive { margin-top: 1.5rem; }
+        .modal textarea { min-height: 140px; }
+        .img-preview { max-height: 120px; margin-top: 0.5em; }
+    </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="admin_dashboard.php">Admin Panel</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav" aria-controls="adminNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="adminNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="admin_dashboard.php">Dashboard</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin_manage_users.php">Users</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin_manage_sellers.php">Sellers</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin_manage_products.php">Products</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin_manage_orders.php">Orders</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin_manage_content.php">Content</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin_site_settings.php">Settings</a></li>
+          <li class="nav-item"><a class="nav-link" href="admin_manage_categories.html">Categories</a></li>
+          <li class="nav-item"><a class="nav-link active" href="index.php">Blog</a></li>
+        </ul>
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link text-danger" href="admin_api/logout.php">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <script>
+    (function() {
+      var path = window.location.pathname.split('/').pop();
+      document.querySelectorAll('.navbar-nav .nav-link').forEach(function(link) {
+        if (link.getAttribute('href') === path) link.classList.add('active');
+      });
+    })();
+  </script>
+
+  <div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h2 class="mb-0">Blog Management</h2>
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#postModal" onclick="openPostModal()">Add Post</button>
+    </div>
+
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <input type="text" class="form-control" id="searchPosts" placeholder="Search posts...">
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" id="filterStatus">
+          <option value="">All Statuses</option>
+          <option value="published">Published</option>
+          <option value="draft">Draft</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="alert-area"></div>
+    <div class="table-responsive">
+      <table class="table table-striped align-middle">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Status</th>
+            <th>Comments</th>
+            <th>Reactions</th>
+            <th>Created</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="posts-table">
+          <tr><td colspan="8" class="text-center">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Post Modal -->
+  <div class="modal fade" id="postModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" id="postForm" onsubmit="event.preventDefault(); savePost();">
+        <div class="modal-header">
+          <h5 class="modal-title" id="postModalTitle">Add Post</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="post-id">
+          <div class="row mb-3">
+            <div class="col-md-8">
+              <label class="form-label">Title</label>
+              <input type="text" id="post-title" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Status</label>
+              <select class="form-select" id="post-status">
+                <option value="published">Published</option>
+                <option value="draft">Draft</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Summary</label>
+            <input type="text" id="post-summary" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Content</label>
+            <textarea id="post-content" class="form-control" rows="6" required></textarea>
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Category</label>
+              <input type="text" id="post-category" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Image</label>
+              <input type="file" id="image-upload" accept="image/*" class="form-control" onchange="previewImage(event)">
+              <img id="image-preview" src="" alt="Image Preview" class="img-fluid img-preview d-none">
+              <input type="hidden" id="post-image">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Comments Modal -->
+  <div class="modal fade" id="commentsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Comments</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="comments-alert"></div>
+          <div class="table-responsive">
+            <table class="table table-bordered">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Author</th>
+                  <th>Comment</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                  <th>Warn</th>
+                </tr>
+              </thead>
+              <tbody id="comments-table">
+                <tr><td colspan="5" class="text-center">Loading...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    let posts = [], currentPostId = null;
+    let postModal, commentsModal;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      postModal = new bootstrap.Modal(document.getElementById('postModal'));
+      commentsModal = new bootstrap.Modal(document.getElementById('commentsModal'));
+      fetchPosts();
+
+      document.getElementById('searchPosts')?.addEventListener('input', debounce(fetchPosts, 300));
+      document.getElementById('filterStatus')?.addEventListener('change', fetchPosts);
+    });
+
+    function debounce(fn, delay) {
+      let t;
+      return function() {
+        clearTimeout(t);
+        t = setTimeout(() => fn(), delay);
+      };
+    }
+
+    function fetchPosts() {
+      const search = document.getElementById('searchPosts')?.value?.trim() || '';
+      const status = document.getElementById('filterStatus')?.value || '';
+      const url = `blog_admin.php?action=list&search=${encodeURIComponent(search)}&status=${encodeURIComponent(status)}`;
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          posts = data.posts || [];
+          renderPosts();
+        })
+        .catch(() => showAlert('Error loading posts.', 'danger'));
+    }
+
+    function renderPosts() {
+      const table = document.getElementById('posts-table');
+      if (!posts.length) {
+        table.innerHTML = '<tr><td colspan="8" class="text-center">No posts found.</td></tr>';
+        return;
+      }
+      table.innerHTML = posts.map(post => {
+        const statusBadge = post.status === 'published' ? 'success' : post.status === 'draft' ? 'warning' : 'secondary';
+        const toggleLabel = post.status === 'published' ? 'Hide' : 'Publish';
+        const toggleClass = post.status === 'published' ? 'btn-outline-warning' : 'btn-outline-success';
+        return `
+        <tr>
+          <td>${post.id}</td>
+          <td>${escapeHTML(post.title)}</td>
+          <td>${escapeHTML(post.author_name || 'Admin')}${post.author_type === 'seller' ? ' <span class="badge bg-info">Seller</span>' : ''}</td>
+          <td><span class="badge bg-${statusBadge}">${escapeHTML(post.status || 'draft')}</span></td>
+          <td>${post.comment_count || 0}</td>
+          <td>${post.reactions || 0}</td>
+          <td>${post.created_at ? post.created_at.split(' ')[0] : ''}</td>
+          <td>
+            <button class="btn btn-sm btn-warning me-1" onclick="openPostModal(${post.id})">Edit</button>
+            <button class="btn btn-sm ${toggleClass} me-1" onclick="togglePostStatus(${post.id}, '${post.status}')">${toggleLabel}</button>
+            <button class="btn btn-sm btn-info me-1" onclick="openCommentsModal(${post.id})">Comments</button>
+            <button class="btn btn-sm btn-danger" onclick="deletePost(${post.id})">Delete</button>
+          </td>
+        </tr>
+      `}).join('');
+    }
+
+    function openPostModal(id = 0) {
+      document.getElementById('postForm').reset();
+      document.getElementById('image-preview').classList.add('d-none');
+      document.getElementById('image-preview').src = '';
+      document.getElementById('post-id').value = '';
+      document.getElementById('post-image').value = '';
+      document.getElementById('postModalTitle').textContent = id ? 'Edit Post' : 'Add Post';
+
+      if (id) {
+        const post = posts.find(p => p.id == id);
+        if (!post) return;
+        document.getElementById('post-id').value = post.id;
+        document.getElementById('post-title').value = post.title || '';
+        document.getElementById('post-summary').value = post.summary || '';
+        document.getElementById('post-content').value = post.content || '';
+        document.getElementById('post-category').value = post.category || '';
+        document.getElementById('post-status').value = post.status || 'published';
+        document.getElementById('post-image').value = post.image || '';
+        if (post.image) {
+          const preview = document.getElementById('image-preview');
+          preview.src = post.image;
+          preview.classList.remove('d-none');
+        }
+      }
+      postModal.show();
+    }
+
+    function previewImage(event) {
+      const input = event.target;
+      const preview = document.getElementById('image-preview');
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          preview.src = e.target.result;
+          preview.classList.remove('d-none');
+        }
+        reader.readAsDataURL(input.files[0]);
+        uploadImage(input.files[0]);
+      }
+    }
+
+    function uploadImage(file) {
+      const formData = new FormData();
+      formData.append('image', file);
+      fetch('upload_image.php', {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('post-image').value = data.image;
+        }
+      })
+      .catch(() => {});
+    }
+
+    function savePost() {
+      const id = document.getElementById('post-id').value;
+      const payload = {
+        action: 'save_post',
+        id: id ? parseInt(id) : 0,
+        title: document.getElementById('post-title').value.trim(),
+        summary: document.getElementById('post-summary').value.trim(),
+        content: document.getElementById('post-content').value.trim(),
+        image: document.getElementById('post-image').value.trim(),
+        category: document.getElementById('post-category').value.trim(),
+        status: document.getElementById('post-status').value
+      };
+      fetch('blog_admin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(resp => {
+        if (resp.success) {
+          showAlert('Saved successfully!', 'success');
+          postModal.hide();
+          fetchPosts();
+        } else {
+          showAlert(resp.error || 'Error saving post.', 'danger');
+        }
+      }).catch(() => showAlert('Error saving post.', 'danger'));
+    }
+
+    function deletePost(id) {
+      if (!confirm('Delete this post? This cannot be undone.')) return;
+      fetch('blog_admin.php', {
+        method: 'DELETE',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'id=' + encodeURIComponent(id)
+      })
+      .then(res => res.json())
+      .then(resp => {
+        if (resp.success) {
+          showAlert('Deleted successfully!', 'success');
+          fetchPosts();
+        } else {
+          showAlert(resp.error || 'Error deleting post.', 'danger');
+        }
+      }).catch(() => showAlert('Error deleting post.', 'danger'));
+    }
+
+    function togglePostStatus(id, currentStatus) {
+      const newStatus = currentStatus === 'published' ? 'inactive' : 'published';
+      fetch('blog_admin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'toggle_post_status', id: id, status: newStatus })
+      })
+      .then(res => res.json())
+      .then(() => {
+        showAlert('Post status updated.', 'success');
+        fetchPosts();
+      })
+      .catch(() => showAlert('Error updating post status.', 'danger'));
+    }
+
+    function openCommentsModal(postId) {
+      currentPostId = postId;
+      const post = posts.find(p => p.id == postId);
+      document.querySelector('#commentsModal .modal-title').textContent = post ? 'Comments: ' + post.title : 'Comments';
+      document.getElementById('comments-table').innerHTML = '<tr><td colspan="6" class="text-center">Loading...</td></tr>';
+      commentsModal.show();
+      fetch('blog_admin.php?action=comments&post_id=' + postId)
+        .then(res => res.json())
+        .then(data => renderComments(data.comments || []))
+        .catch(() => {
+          document.getElementById('comments-table').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Error loading comments.</td></tr>';
+        });
+    }
+
+    function renderComments(comments) {
+      const table = document.getElementById('comments-table');
+      if (!comments.length) {
+        table.innerHTML = '<tr><td colspan="6" class="text-center">No comments yet.</td></tr>';
+        return;
+      }
+      table.innerHTML = comments.map(c => {
+        const isHidden = c.status === 'hidden';
+        return `
+        <tr class="${isHidden ? 'table-secondary' : ''}">
+          <td>${c.id}</td>
+          <td>${escapeHTML(c.author_name || c.username || 'Anonymous')}${c.user_id ? ` <button class="btn btn-sm btn-outline-danger btn-xs" onclick="banUser(${c.user_id})">Ban</button>` : ''}</td>
+          <td>${escapeHTML(c.comment_text)}${isHidden ? ' <span class="badge bg-secondary">Hidden</span>' : ''}</td>
+          <td>${c.created_at ? c.created_at.split(' ')[0] : ''}</td>
+          <td>
+            <button class="btn btn-sm btn-warning me-1" onclick="toggleCommentVisibility(${c.id}, '${c.status}')">${isHidden ? 'Unhide' : 'Hide'}</button>
+            <button class="btn btn-sm btn-danger" onclick="deleteComment(${c.id})">Delete</button>
+          </td>
+          <td>
+            ${c.user_id ? `<button class="btn btn-sm btn-outline-warning btn-xs" onclick="warnUser(${c.user_id})">Warn</button>` : ''}
+          </td>
+        </tr>
+      `}).join('');
+    }
+
+    function deleteComment(commentId) {
+      if (!confirm('Delete this comment?')) return;
+      fetch('blog_admin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_comment', comment_id: commentId })
+      })
+      .then(res => res.json())
+      .then(() => {
+        showAlert('Comment deleted.', 'success');
+        fetch('blog_admin.php?action=comments&post_id=' + currentPostId)
+          .then(res => res.json())
+          .then(data => renderComments(data.comments || []));
+      })
+      .catch(() => showAlert('Error deleting comment.', 'danger'));
+    }
+
+    function toggleCommentVisibility(commentId, currentStatus) {
+      const action = currentStatus === 'hidden' ? 'unhide_comment' : 'hide_comment';
+      fetch('blog_admin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: action, comment_id: commentId })
+      })
+      .then(res => res.json())
+      .then(() => {
+        showAlert('Comment visibility updated.', 'success');
+        fetch('blog_admin.php?action=comments&post_id=' + currentPostId)
+          .then(res => res.json())
+          .then(data => renderComments(data.comments || []));
+      })
+      .catch(() => showAlert('Error updating comment.', 'danger'));
+    }
+
+    function banUser(userId) {
+      if (!confirm('Ban this user? They will not be able to log in or interact.')) return;
+      fetch('blog_admin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'ban_user', user_id: userId })
+      })
+      .then(res => res.json())
+      .then(() => showAlert('User banned.', 'success'))
+      .catch(() => showAlert('Error banning user.', 'danger'));
+    }
+
+    function warnUser(userId) {
+      const message = prompt('Enter warning message for the user:');
+      if (!message) return;
+      fetch('blog_admin.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'warn_user', user_id: userId, message: message })
+      })
+      .then(res => res.json())
+      .then(() => showAlert('Warning sent to user.', 'success'))
+      .catch(() => showAlert('Error sending warning.', 'danger'));
+    }
+
+    function showAlert(msg, type = 'info') {
+      document.getElementById('alert-area').innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+          ${escapeHTML(msg)}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+      setTimeout(() => { document.getElementById('alert-area').innerHTML = ''; }, 4000);
+    }
+
+    function escapeHTML(str) {
+      return String(str == null ? '' : str).replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+      });
+    }
+  </script>
+  <script src="auto_refresh.js"></script>
+</body>
+</html>

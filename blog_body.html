@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blog | Marketplace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .card-img-top { object-fit: cover; height: 220px; }
+    .blog-meta { font-size: 0.85rem; color: #6c757d; }
+    .blog-stat { font-size: 0.85rem; }
+    .category-badge { background: #e9ecef; color: #495057; }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="index.html">Marketplace</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+          <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="login.html">Profile</a></li>
+          <li class="nav-item"><a class="nav-link" href="order.html">Orders</a></li>
+          <li class="nav-item"><a class="nav-link" href="contact.html">Support</a></li>
+          <li class="nav-item"><a class="nav-link" href="#" id="logout-link">Logout</a></li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+  <div class="container mt-5">
+    <h2 class="text-center">Latest Blog Posts</h2>
+    <p class="text-center">Stay updated with the latest news, tips, and trends in online buying and selling.</p>
+
+    <div class="row g-3 mb-4 align-items-end">
+      <div class="col-md-4">
+        <input type="text" id="searchInput" class="form-control" placeholder="Search posts...">
+      </div>
+      <div class="col-md-3">
+        <select id="categoryFilter" class="form-select">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select id="sortFilter" class="form-select">
+          <option value="recent">Recent</option>
+          <option value="trending">Trending</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button id="applyFilters" class="btn btn-primary w-100">Apply</button>
+      </div>
+    </div>
+
+    <div class="row" id="blog-list">
+      <div class="text-center text-muted py-5" id="loading-indicator">Loading...</div>
+    </div>
+    <div id="pagination-container" class="d-none justify-content-center mt-4"></div>
+  </div>
+  <script>
+    let currentPage = 1;
+    let currentCategory = '';
+    let currentSearch = '';
+    let currentSort = 'recent';
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('logout-link').addEventListener('click', function(e) {
+        e.preventDefault();
+        window.location.href = 'logout.php';
+      });
+      loadCategories();
+      fetchPosts();
+      document.getElementById('applyFilters').addEventListener('click', function() {
+        currentPage = 1;
+        currentCategory = document.getElementById('categoryFilter').value;
+        currentSearch = document.getElementById('searchInput').value.trim();
+        currentSort = document.getElementById('sortFilter').value;
+        fetchPosts();
+      });
+      document.getElementById('searchInput').addEventListener('keyup', function(e) {
+        if (e.key === 'Enter') document.getElementById('applyFilters').click();
+      });
+    });
+
+    function loadCategories() {
+      fetch('blog_posts.php?categories' + '&_=' + Date.now())
+        .then(res => res.json())
+        .then(data => {
+          if (data.categories && data.categories.length) {
+            const sel = document.getElementById('categoryFilter');
+            data.categories.forEach(cat => {
+              const opt = document.createElement('option');
+              opt.value = cat;
+              opt.textContent = cat;
+              sel.appendChild(opt);
+            });
+          }
+        })
+        .catch(() => {});
+    }
+
+    function fetchPosts() {
+      const row = document.getElementById('blog-list');
+      row.innerHTML = '<div class="text-center text-muted py-5">Loading...</div>';
+      const params = new URLSearchParams({ page: currentPage, limit: 9, sort: currentSort });
+      if (currentCategory) params.set('category', currentCategory);
+      if (currentSearch) params.set('search', currentSearch);
+      fetch('blog_posts.php?' + params.toString() + '&_=' + Date.now())
+        .then(res => res.json())
+        .then(posts => renderBlogPosts(posts))
+        .catch(() => showBlogError());
+    }
+
+    function renderBlogPosts(posts) {
+      const row = document.getElementById('blog-list');
+      const pagination = document.getElementById('pagination-container');
+      if (posts.error) {
+        row.innerHTML = '<div class="text-center text-muted py-5">' + posts.error + '</div>';
+        pagination.classList.add('d-none');
+        return;
+      }
+      const list = posts.posts || posts;
+      if (!list.length) {
+        row.innerHTML = '<div class="text-center text-muted py-5">No blog posts found.</div>';
+        pagination.classList.add('d-none');
+        return;
+      }
+      row.innerHTML = list.map(post => `
+        <div class="col-md-4">
+          <div class="card mb-4 h-100">
+             <img src="${post.image || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=400&h=220&fit=crop'}" class="card-img-top" alt="${escapeHTML(post.title)}">
+            <div class="card-body d-flex flex-column">
+              <div class="mb-2">
+                ${post.category ? '<span class="badge category-badge me-1">' + escapeHTML(post.category) + '</span>' : ''}
+                <span class="text-muted small">${new Date(post.created_at).toLocaleDateString()}</span>
+              </div>
+              <h5 class="card-title">${escapeHTML(post.title)}</h5>
+              <p class="card-text text-muted small">By ${escapeHTML(post.author_name || 'Admin')}</p>
+              <p class="card-text">${escapeHTML(post.summary || '')}</p>
+              <div class="mt-auto d-flex justify-content-between align-items-center">
+                <span class="blog-stat">
+                  <span class="me-3">&#9829; ${post.reactions || 0}</span>
+                  <span>&#128172; ${post.comment_count || 0}</span>
+                </span>
+                <a href="blog_post.php?id=${post.id}" class="btn btn-primary mt-auto">Read More</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      if (posts.pagination && posts.pagination.total_pages > 1) {
+        pagination.classList.remove('d-none');
+        pagination.innerHTML = renderPagination(posts.pagination);
+      } else {
+        pagination.classList.add('d-none');
+      }
+    }
+
+    function renderPagination(p) {
+      let html = '<nav><ul class="pagination">';
+      html += '<li class="page-item ' + (p.page <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="goToPage(' + (p.page - 1) + '); return false;">Previous</a></li>';
+      for (let i = 1; i <= p.total_pages; i++) {
+        html += '<li class="page-item ' + (i === p.page ? 'active' : '') + '"><a class="page-link" href="#" onclick="goToPage(' + i + '); return false;">' + i + '</a></li>';
+      }
+      html += '<li class="page-item ' + (p.page >= p.total_pages ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="goToPage(' + (p.page + 1) + '); return false;">Next</a></li>';
+      html += '</ul></nav>';
+      return html;
+    }
+
+    function goToPage(page) {
+      currentPage = page;
+      fetchPosts();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function showBlogError() {
+      const row = document.getElementById('blog-list');
+      row.innerHTML = '<div class="text-center text-danger py-5">Failed to load blog posts.</div>';
+      document.getElementById('pagination-container').classList.add('d-none');
+    }
+
+    function escapeHTML(str) {
+      return String(str || '').replace(/[&<>"']/g, function(match) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[match];
+      });
+    }
+  </script>
+  <script src="auto_refresh.js"></script>
+</body>
+</html>

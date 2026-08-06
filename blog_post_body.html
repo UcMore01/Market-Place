@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blog Post | Marketplace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    .comment-thread { border-left: 2px solid #dee2e6; padding-left: 1rem; margin-left: 0.5rem; }
+    .reaction-btn { cursor: pointer; user-select: none; }
+  </style>
+</head>
+<body>
+  <div class="container my-5">
+    <a href="blog.php" class="btn btn-link mb-4">&larr; Back to blog</a>
+    <div id="post-container">
+      <div class="text-center py-5">Loading post...</div>
+    </div>
+    <div class="mt-4" id="post-reactions" style="display:none;">
+      <button id="postLikeBtn" class="btn btn-outline-danger btn-sm reaction-btn">&#9829; <span id="postLikeCount">0</span> Like</button>
+    </div>
+    <div class="mt-5">
+      <h4>Comments</h4>
+      <div id="comments-container" class="mb-4"></div>
+      <div id="comment-form" class="mb-4">
+        <div class="card">
+          <div class="card-body">
+            <h6 class="card-title" id="replyTitle">Add a comment</h6>
+            <input type="hidden" id="replyParentId" value="">
+            <div class="mb-3">
+              <textarea class="form-control" id="commentText" rows="3" placeholder="Write your comment..."></textarea>
+            </div>
+            <button id="submitComment" class="btn btn-primary">Post Comment</button>
+            <button id="cancelReply" class="btn btn-secondary d-none" onclick="cancelReply()">Cancel Reply</button>
+          </div>
+        </div>
+      </div>
+      <div id="comment-feedback" class="text-danger"></div>
+    </div>
+  </div>
+  <script src="auth_redirect.js"></script>
+  <script>
+    const postId = new URLSearchParams(window.location.search).get('id');
+    const postContainer = document.getElementById('post-container');
+    const commentsContainer = document.getElementById('comments-container');
+    const commentFeedback = document.getElementById('comment-feedback');
+    let currentUser = null;
+    let currentPost = null;
+    let commentReactions = {};
+
+    function escapeHTML(str) {
+      return String(str || '').replace(/[&<>"']/g, function(match) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[match];
+      });
+    }
+
+    if (!postId) {
+      postContainer.innerHTML = '<div class="text-danger">Blog post ID is missing.</div>';
+    } else {
+      window.checkAuth().then(loggedIn => {
+        currentUser = loggedIn ? {} : null;
+        fetchPost();
+        fetchComments();
+      });
+    }
+
+    function fetchPost() {
+      fetch('blog_posts.php?id=' + encodeURIComponent(postId) + '&_=' + Date.now())
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            postContainer.innerHTML = '<div class="text-danger">' + escapeHTML(data.error) + '</div>';
+            return;
+          }
+          currentPost = data;
+          postContainer.innerHTML = `
+            <h1>${escapeHTML(data.title)}</h1>
+            <p class="text-muted">${new Date(data.created_at).toLocaleString()}</p>
+            ${data.image ? '<img src="' + escapeHTML(data.image) + '" class="img-fluid mb-4" alt="' + escapeHTML(data.title) + '">' : ''}
+            <div>${escapeHTML(data.content || '').replace(/\n/g, '<br>')}</div>
+          `;
+          const reactionsDiv = document.getElementById('post-reactions');
+          reactionsDiv.style.display = 'block';
+          document.getElementById('postLikeCount').textContent = data.reactions || 0;
+          if (currentUser && data.user_reacted) {
+            document.getElementById('postLikeBtn').classList.add('btn-danger');
+            document.getElementById('postLikeBtn').classList.remove('btn-outline-danger');
+          }
+        })
+        .catch(() => {
+          postContainer.innerHTML = '<div class="text-danger">Failed to load blog post.</div>';
+        });
+    }
+
+    document.getElementById('postLikeBtn').addEventListener('click', async function() {
+      try {
+        await window.requireAuth();
+      } catch (err) {
+        return;
+      }
+      fetch('blog_reactions.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: 'post', id: postId, type: 'like' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('postLikeCount').textContent = data.count;
+          const btn = document.getElementById('postLikeBtn');
+          if (data.user_reacted) {
+            btn.classList.add('btn-danger');
+            btn.classList.remove('btn-outline-danger');
+          } else {
+            btn.classList.remove('btn-danger');
+            btn.classList.add('btn-outline-danger');
+          }
+        }
+      })
+      .catch(() => {});
+    });
+
+    function fetchComments() {
+      fetch('blog_comments.php?post_id=' + encodeURIComponent(postId) + '&_=' + Date.now())
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            commentsContainer.innerHTML = '<div class="text-muted">' + escapeHTML(data.error) + '</div>';
+            return;
+          }
+          if (!data.length) {
+            commentsContainer.innerHTML = '<div class="text-muted">No comments yet. Be the first to comment!</div>';
+            return;
+          }
+          data.forEach(c => { commentReactions[c.id] = { count: c.reactions || 0, user_reacted: c.user_reacted || false }; });
+          const tree = buildCommentTree(data);
+          commentsContainer.innerHTML = tree.map(c => renderComment(c)).join('');
+        })
+        .catch(() => {
+          commentsContainer.innerHTML = '<div class="text-danger">Failed to load comments.</div>';
+        });
+    }
+
+    function buildCommentTree(comments) {
+      const map = {};
+      const roots = [];
+      comments.forEach(c => {
+        map[c.id] = { ...c, replies: [] };
+      });
+      comments.forEach(c => {
+        if (c.parent_id && map[c.parent_id]) {
+          map[c.parent_id].replies.push(map[c.id]);
+        } else if (!c.parent_id) {
+          roots.push(map[c.id]);
+        }
+      });
+      return roots;
+    }
+
+    function renderComment(comment) {
+      const hasReplies = comment.replies && comment.replies.length > 0;
+      return `
+        <div class="card mb-3" id="comment-${comment.id}">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h6 class="card-title mb-1">${escapeHTML(comment.author_name)}</h6>
+                <p class="card-text mb-1">${escapeHTML(comment.comment_text)}</p>
+                <p class="text-muted small mb-0">${new Date(comment.created_at).toLocaleString()}</p>
+              </div>
+              <div class="text-end">
+                <span class="blog-stat me-2 reaction-btn" onclick="toggleCommentReaction(${comment.id})">&#9829; <span class="comment-like-count-${comment.id}">${commentReactions[comment.id] ? commentReactions[comment.id].count : 0}</span></span>
+                ${currentUser ? '<button class="btn btn-sm btn-outline-secondary" onclick="setReply(' + comment.id + ', \'' + escapeHTML(comment.author_name) + '\')">Reply</button>' : ''}
+              </div>
+            </div>
+            ${hasReplies ? '<div class="comment-thread mt-3">' + comment.replies.map(r => renderComment(r)).join('') + '</div>' : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function toggleCommentReaction(commentId) {
+      (async () => {
+        try {
+          await window.requireAuth();
+        } catch (err) {
+          return;
+        }
+        fetch('blog_reactions.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: 'comment', id: commentId, type: 'like' })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          const el = document.querySelector('.comment-like-count-' + commentId);
+          if (el) el.textContent = data.count;
+          commentReactions[commentId] = { count: data.count, user_reacted: data.user_reacted };
+        }
+      })
+      .catch(() => {});
+    }
+
+    function setReply(parentId, authorName) {
+      (async () => {
+        try {
+          await window.requireAuth();
+        } catch (err) {
+          return;
+        }
+        document.getElementById('replyParentId').value = parentId;
+        document.getElementById('replyTitle').textContent = 'Replying to ' + authorName;
+        document.getElementById('cancelReply').classList.remove('d-none');
+        document.getElementById('commentText').focus();
+      })();
+    }
+
+    function cancelReply() {
+      document.getElementById('replyParentId').value = '';
+      document.getElementById('replyTitle').textContent = 'Add a comment';
+      document.getElementById('cancelReply').classList.add('d-none');
+    }
+
+    document.getElementById('submitComment').addEventListener('click', async function() {
+      const text = document.getElementById('commentText').value.trim();
+      const parentId = document.getElementById('replyParentId').value;
+      if (!text) {
+        commentFeedback.textContent = 'Comment text is required.';
+        return;
+      }
+      try {
+        await window.requireAuth();
+      } catch (err) {
+        return;
+      }
+      commentFeedback.textContent = '';
+      const payload = { post_id: postId, comment_text: text };
+      if (parentId) payload.parent_id = parseInt(parentId);
+
+      fetch('blog_comments.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('commentText').value = '';
+          cancelReply();
+          fetchComments();
+        } else {
+          commentFeedback.textContent = data.error || 'Failed to post comment.';
+        }
+      })
+      .catch(() => {
+        commentFeedback.textContent = 'Failed to post comment.';
+      });
+    });
+  </script>
+  <script src="auto_refresh.js"></script>
+</body>
+</html>

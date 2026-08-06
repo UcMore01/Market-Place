@@ -1,0 +1,66 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="admin_dashboard.php">Admin Panel</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav" aria-controls="adminNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="adminNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="admin_dashboard.php">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_users.php">Users</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_sellers.php">Sellers</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_products.php">Products</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_orders.php">Orders</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_content.php">Content</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_site_settings.php">Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_categories.html">Categories</a>
+        </li>
+        <li class="nav-item d-none" id="registerAdminNav">
+          <a class="nav-link" href="admin_register.php">Register Admin</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link text-danger" href="admin_api/logout.php">Logout</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<script>
+  // Highlight the current page in the navbar
+  (function() {
+    var path = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(function(link) {
+      if (link.getAttribute('href') === path) {
+        link.classList.add('active');
+      }
+    });
+  })();
+
+  // Only expose the Register Admin link to admins
+  fetch('admin_api/me.php', { credentials: 'same-origin' })
+    .then(res => res.ok ? res.json() : null)
+    .then(me => {
+      if (me && me.admin_id) {
+        var nav = document.getElementById('registerAdminNav');
+        if (nav) nav.classList.remove('d-none');
+      }
+    })
+    .catch(() => {});
+</script>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="description" content="Marketplace - Buy and sell products online. Discover electronics, fashion, home goods, and more from trusted sellers.">
+    <meta name="keywords" content="marketplace, buy, sell, online shopping, products">
+    <meta name="author" content="Marketplace">
+
+  <title>Admin Manage Orders</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="admin_dashboard.php">Admin Panel</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav" aria-controls="adminNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="adminNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="admin_dashboard.php">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_users.php">Users</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_sellers.php">Sellers</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_products.php">Products</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_orders.php">Orders</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_content.php">Content</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_site_settings.php">Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_categories.html">Categories</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_blog/index.php">Blog</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link text-danger" href="admin_api/logout.php">Logout</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<script>
+  // Highlight the current page in the navbar
+  (function() {
+    var path = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(function(link) {
+      if (link.getAttribute('href') === path) {
+        link.classList.add('active');
+      }
+    });
+  })();
+</script>
+  <div class="container mt-4">
+    <h1 class="mb-4">Manage Orders</h1>
+    <div class="row mb-3">
+      <div class="col-md-4">
+        <input type="text" class="form-control" id="orderSearch" placeholder="Search orders by ID, user, or email...">
+      </div>
+    </div>
+    <div id="order-management"></div>
+    <nav id="orderPagination" aria-label="Orders pagination"></nav>
+  </div>
+
+  <!-- Update Order Modal -->
+  <div class="modal fade" id="orderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Update Order</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div id="orderAlert"></div>
+          <p><strong>Order #<span id="orderModalId"></span></strong></p>
+          <div class="mb-3">
+            <label class="form-label">Status</label>
+            <select class="form-select" id="orderStatus">
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="saveOrderStatus()">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      let currentOrderPage = 1;
+      const orderLimit = 10;
+
+      function fetchOrders(page = 1) {
+        const search = document.getElementById('orderSearch')?.value?.trim() || '';
+        const url = `admin_orders/list.php?page=${page}&limit=${orderLimit}&search=${encodeURIComponent(search)}`;
+        fetch(url)
+          .then(res => {
+            if (!res.ok) throw new Error('Failed to fetch orders');
+            return res.json();
+          })
+          .then(renderOrders)
+          .catch(() => {
+            document.getElementById('order-management').innerHTML = '<div class="alert alert-danger">Error loading orders.</div>';
+          });
+      }
+
+      function renderOrders(response) {
+        const orders = response.orders || [];
+        const pagination = response.pagination || {};
+        currentOrderPage = pagination.page || 1;
+        const totalPages = pagination.total_pages || 1;
+
+        let html = `
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>User</th>
+                <th>Seller</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${orders.map(order => `
+                <tr>
+                  <td>${order.order_id || order.id}</td>
+                  <td>${order.user_name || ''} <small class="text-muted">${order.user_email || ''}</small></td>
+                  <td>${order.seller_name || ''}</td>
+                  <td>$${order.total_price ? Number(order.total_price).toFixed(2) : '0.00'}</td>
+                  <td>
+                    <span class="badge bg-${order.status === 'completed' ? 'success' : order.status === 'pending' ? 'warning' : order.status === 'refunded' ? 'secondary' : order.status === 'cancelled' ? 'danger' : 'info'}">
+                      ${order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Unknown'}
+                    </span>
+                  </td>
+                  <td>${order.created_at ? new Date(order.created_at).toLocaleString() : ''}</td>
+                  <td>
+                    <button class="btn btn-sm btn-info" onclick='showOrderModal(${JSON.stringify(order).replace(/'/g, "&#39;")})'>Update</button>
+                    ${order.status !== 'refunded' && order.status !== 'cancelled' ?
+                      `<button class="btn btn-sm btn-danger" onclick="refundOrder(${order.id || order.order_id})">Refund</button>` : ''}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <button class="btn btn-outline-primary" ${currentOrderPage <= 1 ? 'disabled' : ''} onclick="changeOrderPage(${currentOrderPage - 1})">Previous</button>
+            <span class="text-muted">Page ${currentOrderPage} of ${totalPages} (${pagination.total || 0} total)</span>
+            <button class="btn btn-outline-primary" ${currentOrderPage >= totalPages ? 'disabled' : ''} onclick="changeOrderPage(${currentOrderPage + 1})">Next</button>
+          </div>
+        `;
+        document.getElementById('order-management').innerHTML = html;
+      }
+
+      window.changeOrderPage = function (page) {
+        fetchOrders(page);
+      };
+
+      document.getElementById('orderSearch')?.addEventListener('input', function () {
+        fetchOrders(1);
+      });
+
+      window.refundOrder = function (id) {
+        if (!confirm('Refund this order?')) return;
+        fetch('admin_orders/refund.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              fetchOrders(currentOrderPage);
+            } else {
+              alert(data.error || 'Refund failed.');
+            }
+          })
+          .catch(() => alert('Network error.'));
+      };
+
+      window.showOrderModal = function (order) {
+        document.getElementById('orderAlert').innerHTML = '';
+        const id = order.id || order.order_id;
+        document.getElementById('orderModalId').textContent = id;
+        document.getElementById('orderStatus').value = order.status || 'pending';
+        const modal = new bootstrap.Modal(document.getElementById('orderModal'));
+        modal.show();
+        document.getElementById('orderModal').dataset.orderId = id;
+      };
+
+      window.saveOrderStatus = function () {
+        const alertBox = document.getElementById('orderAlert');
+        alertBox.innerHTML = '';
+        const id = document.getElementById('orderModal').dataset.orderId;
+        const status = document.getElementById('orderStatus').value;
+        fetch('admin_orders/update_status.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id, status: status })
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.success) {
+              bootstrap.Modal.getInstance(document.getElementById('orderModal')).hide();
+              fetchOrders(currentOrderPage);
+            } else {
+              alertBox.innerHTML = '<div class="alert alert-danger">' + (data.error || 'Update failed.') + '</div>';
+            }
+          })
+          .catch(() => {
+            alertBox.innerHTML = '<div class="alert alert-danger">Network error.</div>';
+          });
+      };
+
+      fetchOrders();
+    });
+  </script>
+  <script src="auto_refresh.js"></script>
+</body>
+</html>

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="description" content="Marketplace - Buy and sell products online. Discover electronics, fashion, home goods, and more from trusted sellers.">
+    <meta name="keywords" content="marketplace, buy, sell, online shopping, products">
+    <meta name="author" content="Marketplace">
+
+  <title>Admin Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="admin_dashboard.php">Admin Panel</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNav" aria-controls="adminNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="adminNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item">
+          <a class="nav-link" href="admin_dashboard.php">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_users.php">Users</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_sellers.php">Sellers</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_products.php">Products</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_orders.php">Orders</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_content.php">Content</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_site_settings.php">Settings</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_manage_categories.html">Categories</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="admin_blog/index.php">Blog</a>
+        </li>
+        <li class="nav-item d-none" id="registerAdminNav">
+          <a class="nav-link" href="admin_register.php">Register Admin</a>
+        </li>
+      </ul>
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link text-danger" href="admin_api/logout.php">Logout</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<script>
+  // Highlight the current page in the navbar
+  (function() {
+    var path = window.location.pathname.split('/').pop();
+    document.querySelectorAll('.navbar-nav .nav-link').forEach(function(link) {
+      if (link.getAttribute('href') === path) {
+        link.classList.add('active');
+      }
+    });
+  })();
+
+  // Only expose the Register Admin link to admins
+  fetch('admin_api/me.php', { credentials: 'same-origin' })
+    .then(res => res.ok ? res.json() : null)
+    .then(me => {
+      if (me && me.admin_id) {
+        var nav = document.getElementById('registerAdminNav');
+        if (nav) nav.classList.remove('d-none');
+      }
+    })
+    .catch(() => {});
+
+</script>
+  <div class="container">
+    <h1 class="mb-4">Dashboard</h1>
+    <div id="dashboard-stats" class="row">
+      <!-- Dynamic stats go here (total users, sales, etc.) -->
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      fetch('admin_dashboard/dashboard.php')
+        .then(res => {
+          if (!res.ok) throw new Error('Failed to fetch stats');
+          return res.json();
+        })
+        .then(stats => {
+          renderDashboardStats(stats);
+        })
+        .catch(() => {
+          document.getElementById('dashboard-stats').innerHTML = '<div class="alert alert-danger">Failed to load dashboard statistics.</div>';
+        });
+
+      function renderDashboardStats(stats) {
+        let html = `
+          <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary">
+              <div class="card-body">
+                <h5 class="card-title">Total Users</h5>
+                <p class="card-text fs-2">${stats.total_users || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success">
+              <div class="card-body">
+                <h5 class="card-title">Total Orders</h5>
+                <p class="card-text fs-2">${stats.total_orders || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning">
+              <div class="card-body">
+                <h5 class="card-title">Total Sales</h5>
+                <p class="card-text fs-2">$${stats.total_sales ? Number(stats.total_sales).toFixed(2) : '0.00'}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <div class="card text-white bg-info">
+              <div class="card-body">
+                <h5 class="card-title">Total Products</h5>
+                <p class="card-text fs-2">${stats.total_products || 0}</p>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 mb-3">
+            <a href="admin_blog/index.php" class="card text-white bg-dark text-decoration-none">
+              <div class="card-body">
+                <h5 class="card-title">Blog Posts</h5>
+                <p class="card-text fs-2">${stats.total_posts || 0}</p>
+                <p class="card-text small mb-0">${stats.total_comments || 0} comments</p>
+              </div>
+            </a>
+          </div>
+        `;
+        document.getElementById('dashboard-stats').innerHTML = html;
+      }
+    });
+  </script>
+<script src="auto_refresh.js"></script>
+</body>
+</html>
