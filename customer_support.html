@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="description" content="Marketplace - Buy and sell products online. Discover electronics, fashion, home goods, and more from trusted sellers.">
+    <meta name="keywords" content="marketplace, buy, sell, online shopping, products">
+    <meta name="author" content="Marketplace">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Customer Support</title>
+      <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+      <style>
+        .footer { background: #1a1d20; color: #adb5bd; }
+        .footer a { color: #adb5bd; text-decoration: none; }
+        .footer a:hover { color: #fff; }
+      </style>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="index.html">Marketplace</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="login.html">Profile</a></li>
+                    <li class="nav-item"><a class="nav-link" href="order.html">Orders</a></li>
+                    <li class="nav-item"><a class="nav-link" href="logout.php">Logout</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="text-center mb-5">
+            <img src="https://images.unsplash.com/photo-1521737711867-e3b97375f052?w=700&h=280&fit=crop" class="img-fluid rounded shadow-sm mb-3" alt="Customer support team">
+            <h2>Customer Support</h2>
+            <p class="text-muted">Need help? Fill out the form below or check our FAQs.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h4>Send Us a Message</h4>
+                        <form>
+                            <div class="mb-3">
+                                <label for="supportName" class="form-label">Full Name</label>
+                                <input type="text" class="form-control" id="supportName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="supportEmail" class="form-label">Email Address</label>
+                                <input type="email" class="form-control" id="supportEmail" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="supportMessage" class="form-label">How can we help?</label>
+                                <textarea class="form-control" id="supportMessage" rows="4" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Send Message</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h4>Contact Information</h4>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"><strong>Email:</strong> support@marketplace.com</li>
+                            <li class="list-group-item"><strong>Phone:</strong> +1 (555) 123-4567</li>
+                            <li class="list-group-item"><strong>Hours:</strong> Mon–Fri, 9 AM – 6 PM EST</li>
+                        </ul>
+                        <hr>
+                        <h5>Quick Links</h5>
+                        <ul>
+                            <li><a href="faq.html">Frequently Asked Questions</a></li>
+                            <li><a href="privacy_policy.html">Privacy Policy</a></li>
+                            <li><a href="terms_condition.html">Terms & Conditions</a></li>
+                            <li><a href="refund_return_policy.html">Refund & Return Policy</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function logout() { window.location.href = "logout.php"; }
+    </script>
+    <footer class="footer py-5 mt-5">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-md-4">
+            <h5 class="text-white mb-3">Marketplace</h5>
+            <p class="small">Your trusted online marketplace for buying and selling quality products from top sellers worldwide.</p>
+          </div>
+          <div class="col-md-2">
+            <h6 class="text-white mb-3">Quick Links</h6>
+            <ul class="list-unstyled small">
+              <li><a href="index.html">Home</a></li>
+              <li><a href="products.html">Products</a></li>
+              <li><a href="about_us.html">About Us</a></li>
+              <li><a href="contact.html">Contact</a></li>
+            </ul>
+          </div>
+          <div class="col-md-2">
+            <h6 class="text-white mb-3">Support</h6>
+            <ul class="list-unstyled small">
+              <li><a href="faq.html">FAQ</a></li>
+              <li><a href="refund_return_policy.html">Refund Policy</a></li>
+              <li><a href="terms_condition.html">Terms & Conditions</a></li>
+              <li><a href="privacy_policy.html">Privacy Policy</a></li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h6 class="text-white mb-3">Stay Connected</h6>
+            <p class="small">Subscribe to get special offers and updates.</p>
+            <form class="d-flex" onsubmit="event.preventDefault(); alert('Subscribed!');">
+              <input class="form-control me-2" type="email" placeholder="Enter your email" aria-label="Email">
+              <button class="btn btn-primary rounded-pill px-3" type="submit">Join</button>
+            </form>
+          </div>
+        </div>
+        <hr class="my-4" style="border-color: #343a40;">
+        <div class="text-center small">
+          &copy; 2026 Marketplace. All Rights Reserved.
+        </div>
+      </div>
+    </footer>
+<script src="auto_refresh.js"></script>
+</body>
+</html>

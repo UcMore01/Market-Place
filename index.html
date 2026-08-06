@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="description" content="Marketplace - Buy and sell products online. Discover electronics, fashion, home goods, and more from trusted sellers.">
+    <meta name="keywords" content="marketplace, buy, sell, online shopping, products">
+    <meta name="author" content="Marketplace">
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Marketplace</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0f172a;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --bg-main: #f8fafc;
+      --bg-card: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --radius-sm: 8px;
+      --radius: 12px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-main);
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Hero */
+    .hero-carousel { max-height: 600px; overflow: hidden; position: relative; }
+    .hero-carousel .carousel-item { height: 600px; }
+    .hero-carousel img { object-fit: cover; height: 100%; transform: scale(1.05); transition: transform 8s ease; }
+    .hero-carousel .carousel-item.active img { transform: scale(1.12); }
+    .hero-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(15,23,42,0.65) 0%, rgba(15,23,42,0.25) 60%, transparent 100%); z-index: 2; pointer-events: none; }
+    .hero-caption-wrap { position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; }
+    .hero-card {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px; padding: 2.5rem; max-width: 540px; margin-left: 5%; color: #fff;
+      box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4);
+    }
+    .hero-card h2 { font-weight: 800; letter-spacing: -0.5px; line-height: 1.15; margin-bottom: 0.75rem; font-size: 2.5rem; }
+    .hero-card p { font-size: 1.125rem; opacity: 0.92; margin-bottom: 1.5rem; line-height: 1.6; }
+    .hero-btn {
+      display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.875rem 1.75rem;
+      border-radius: 999px; font-weight: 600; border: none; background: #fff; color: var(--primary);
+      text-decoration: none; transition: all 0.25s ease; font-size: 0.95rem;
+    }
+    .hero-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0,0,0,0.25); color: var(--primary); }
+    .hero-btn-ghost { background: transparent; border: 1.5px solid rgba(255,255,255,0.85); color: #fff; margin-left: 0.75rem; }
+    .hero-btn-ghost:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .carousel-indicators { bottom: 24px; z-index: 4; }
+    .carousel-indicators button { width: 10px; height: 10px; border-radius: 999px; opacity: 1; background: rgba(255,255,255,0.45); border: none; transition: all 0.3s ease; }
+    .carousel-indicators button.active { background: #fff; width: 32px; }
+    .carousel-control-prev, .carousel-control-next {
+      width: 48px; height: 48px; border-radius: 999px; background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.25); top: 50%;
+      transform: translateY(-50%); opacity: 1; margin: 0 16px; transition: all 0.25s ease;
+    }
+    .carousel-control-prev:hover, .carousel-control-next:hover { background: rgba(255,255,255,0.3); }
+    .carousel-control-prev { left: 20px; }
+    .carousel-control-next { right: 20px; }
+
+    /* Sections */
+    .section-title { font-weight: 800; font-size: 1.875rem; letter-spacing: -0.025em; position: relative; display: inline-block; }
+    .section-title::after { content: ''; display: block; width: 60px; height: 4px; background: var(--accent); margin: 0.5rem auto 0; border-radius: 2px; }
+    .section-subtitle { color: var(--text-muted); font-size: 1rem; margin-top: 0.5rem; margin-bottom: 2.5rem; }
+
+    /* Product Cards */
+    .product-card {
+      border: none; border-radius: var(--radius); overflow: hidden;
+      background: var(--bg-card); transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-sm); height: 100%;
+    }
+    .product-card:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--shadow-xl);
+    }
+    .product-img-wrap { position: relative; overflow: hidden; aspect-ratio: 1 / 1; height: 0; padding-bottom: 100%; background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); }
+    .product-img-wrap img {
+      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .product-card:hover .product-img-wrap img { transform: scale(1.08); }
+    .product-img-wrap .img-placeholder {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); color: #94a3b8; font-size: 3rem;
+    }
+
+    /* Badges */
+    .product-badge {
+      position: absolute; top: 12px; left: 12px; padding: 0.35rem 0.75rem;
+      border-radius: 999px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+      z-index: 2;
+    }
+    .badge-new { background: #10b981; color: #fff; }
+    .badge-sale { background: #ef4444; color: #fff; }
+    .badge-trending { background: #f59e0b; color: #fff; }
+
+    /* Wishlist */
+    .wishlist-btn {
+      position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.95); border: none; box-shadow: var(--shadow); font-size: 1rem;
+      display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 2;
+      transition: all 0.2s ease; color: #64748b;
+    }
+    .wishlist-btn:hover { transform: scale(1.1); background: #fff; color: #ef4444; box-shadow: var(--shadow-lg); }
+    .wishlist-btn.active { color: #ef4444; }
+
+    /* Quick Actions Overlay */
+    .product-actions-overlay {
+      position: absolute; bottom: 0; left: 0; right: 0; padding: 1rem;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+      display: flex; gap: 0.5rem; justify-content: center; opacity: 0; transform: translateY(10px);
+      transition: all 0.3s ease; z-index: 2;
+    }
+    .product-card:hover .product-actions-overlay { opacity: 1; transform: translateY(0); }
+    .product-actions-overlay .btn {
+      padding: 0.5rem 1rem; font-size: 0.8rem; font-weight: 600; border-radius: 999px;
+      backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.2);
+    }
+    .btn-quick-view { background: rgba(255,255,255,0.95); color: var(--text-main); }
+    .btn-quick-cart { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-quick-cart:hover { background: var(--accent-hover); }
+
+    /* Card Body */
+    .product-card .card-body { padding: 1.25rem; display: flex; flex-direction: column; }
+    .product-card .card-title {
+      font-size: 0.95rem; font-weight: 600; line-height: 1.4; margin-bottom: 0.5rem;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    }
+    .product-card .seller-badge { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem; }
+    .product-card .price {
+      font-size: 1.125rem; font-weight: 700; color: var(--accent); margin-bottom: 0.75rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .product-card .price .original-price {
+      font-size: 0.85rem; color: #94a3b8; text-decoration: line-through; font-weight: 400;
+    }
+    .product-card .card-actions { margin-top: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+    .btn-view {
+      display: block; width: 100%; text-align: center; padding: 0.625rem; border-radius: var(--radius-sm);
+      font-weight: 600; font-size: 0.875rem; text-decoration: none; border: 1px solid var(--border);
+      color: var(--text-main); background: #fff; transition: all 0.2s ease;
+    }
+    .btn-view:hover { background: var(--bg-main); border-color: var(--text-muted); }
+    .btn-cart {
+      display: block; width: 100%; text-align: center; padding: 0.625rem; border-radius: var(--radius-sm);
+      font-weight: 600; font-size: 0.875rem; border: none; background: var(--accent); color: #fff;
+      transition: all 0.2s ease;
+    }
+    .btn-cart:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow); }
+
+    /* Seller Cards */
+    .seller-card {
+      border: none; border-radius: var(--radius); padding: 1.5rem; text-align: center;
+      background: #fff; box-shadow: var(--shadow-sm); transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1); height: 100%;
+    }
+    .seller-card:hover { transform: translateY(-6px); box-shadow: var(--shadow-lg); }
+    .seller-avatar {
+      width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 0.75rem;
+      border: 3px solid var(--accent); padding: 3px; background: #fff;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero-carousel, .hero-carousel .carousel-item { height: 420px; }
+      .hero-card { margin: 0 auto; padding: 1.5rem; max-width: 90%; }
+      .hero-card h2 { font-size: 1.75rem; }
+    }
+
+    /* Footer */
+    .footer { background: #1a1d20; color: #adb5bd; }
+    .footer a { color: #adb5bd; text-decoration: none; }
+    .footer a:hover { color: #fff; }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">Marketplace</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="categoryDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Categories</a>
+            <ul class="dropdown-menu" aria-labelledby="categoryDropdown" id="categoryDropdownMenu">
+              <li><span class="dropdown-item text-muted">Loading...</span></li>
+            </ul>
+          </li>
+        </ul>
+        <form class="d-flex me-3" role="search" onsubmit="event.preventDefault(); alert('Search coming soon!');">
+          <input class="form-control me-2" type="search" placeholder="Search products..." aria-label="Search">
+          <button class="btn btn-outline-light" type="submit">Search</button>
+        </form>
+        <ul class="navbar-nav mb-2 mb-lg-0">
+          <li class="nav-item"><a class="nav-link" href="blog.html">Blog</a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="contactDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Contact</a>
+            <ul class="dropdown-menu" aria-labelledby="contactDropdown">
+              <li><a class="dropdown-item" href="contact.html">Contact</a></li>
+              <li><a class="dropdown-item" href="refund_return_policy.html">Refund Policy</a></li>
+              <li><a class="dropdown-item" href="terms_condition.html">Terms and Conditions</a></li>
+              <li><a class="dropdown-item" href="privacy_policy.html">Privacy Policy</a></li>
+              <li><a class="dropdown-item" href="about_us.html">About Us</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="profileDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Profile</a>
+            <ul class="dropdown-menu" aria-labelledby="profileDropdown">
+              <li id="loginMenu"><a class="dropdown-item" href="login.html">Login</a></li>
+              <li id="signupMenu"><a class="dropdown-item" href="register.html">Sign-up</a></li>
+              <li id="profileSettingsMenu"><a class="dropdown-item" href="login.html">Profile Settings</a></li>
+              <li id="orderHistoryMenu"><a class="dropdown-item" href="order.html?tab=order">Order History</a></li>
+              <li><hr class="dropdown-divider"></li>
+              <li id="logoutMenu" style="display:none;"><a class="dropdown-item text-danger" href="#" id="logoutBtn">Logout</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="cartDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Cart</a>
+            <ul class="dropdown-menu" aria-labelledby="cartDropdown">
+              <li><a class="dropdown-item" href="cart.html">View Cart</a></li>
+              <li><a class="dropdown-item" href="checkout.html">Checkout</a></li>
+            </ul>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="wishlistDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Wishlist</a>
+            <ul class="dropdown-menu" aria-labelledby="wishlistDropdown">
+              <li><a class="dropdown-item" href="wishlist.html">View Wishlist</a></li>
+              <li><a class="dropdown-item" href="wishlist.html">Saved Items</a></li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Banner Carousel -->
+    <section id="heroCarousel" class="carousel slide hero-carousel" data-bs-interval="4500">
+      <div class="carousel-indicators">
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+        <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+      </div>
+      <div class="carousel-inner" id="bannerContainer">
+        <div class="carousel-item active" data-bs-interval="4000">
+          <img src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1200&h=500&fit=crop" class="d-block w-100" alt="Marketplace">
+          <div class="hero-overlay"></div>
+          <div class="hero-caption-wrap">
+            <div class="container">
+              <div class="hero-card">
+                <span style="font-size:0.8rem;letter-spacing:2px;text-transform:uppercase;opacity:0.85;">Welcome to</span>
+                <h2>Marketplace</h2>
+                <p>Discover amazing products from top sellers around the world.</p>
+                <div>
+                  <a href="products.html" class="hero-btn">Shop Now <span>&rarr;</span></a>
+                  <a href="categories.html" class="hero-btn hero-btn-ghost">Browse Categories</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+      </button>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="container my-5 py-4">
+      <div class="text-center mb-5">
+        <h2 class="section-title">Featured Products</h2>
+        <p class="text-muted mt-2">Handpicked selections just for you</p>
+      </div>
+      <div class="row g-4" id="featuredProducts">
+        <div class="col-12 text-center">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="text-muted mt-2">Loading featured products...</p>
+        </div>
+      </div>
+      <div class="text-center mt-4">
+        <a href="products.html" class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold">View All Products</a>
+      </div>
+    </section>
+
+    <!-- Top Sellers -->
+    <section class="container my-5 py-4">
+      <div class="text-center mb-5">
+        <h2 class="section-title">Top Sellers</h2>
+        <p class="text-muted mt-2">Trusted vendors with the best ratings</p>
+      </div>
+      <div class="row g-4" id="topSellers">
+        <div class="col-12 text-center">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="text-muted mt-2">Loading top sellers...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Categories Quick Links -->
+    <section class="container my-5 py-4">
+      <div class="text-center mb-5">
+        <h2 class="section-title">Shop by Category</h2>
+        <p class="text-muted mt-2">Find exactly what you need</p>
+      </div>
+      <div class="row g-3" id="homeCategoryList">
+        <div class="col-12 text-center">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="mt-2 text-muted">Loading categories...</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="csrf.js"></script>
+  <script>
+    // Login status simulation
+    var isLoggedIn = false;
+
+    document.addEventListener('DOMContentLoaded', function() {
+      if (isLoggedIn) {
+        document.getElementById('loginMenu').style.display = 'none';
+        document.getElementById('signupMenu').style.display = 'none';
+        document.getElementById('logoutMenu').style.display = 'block';
+      }
+
+      document.getElementById('logoutBtn')?.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.location = 'logout.php';
+      });
+
+      loadFeaturedProducts();
+      loadTopSellers();
+      loadBanners();
+      loadCategoryDropdown();
+      loadHomeCategories();
+    });
+
+    function categoryIcon(name) {
+      const n = String(name).toLowerCase();
+      if (n.includes('book') || n.includes('novel') || n.includes('read')) return '📚';
+      if (n.includes('cloth') || n.includes('fashion') || n.includes('wear') || n.includes('shoe') || n.includes('dress')) return '👗';
+      if (n.includes('home') || n.includes('kitchen') || n.includes('furniture') || n.includes('decor')) return '🏠';
+      if (n.includes('electron') || n.includes('phone') || n.includes('laptop') || n.includes('gadget') || n.includes('tech')) return '🔌';
+      if (n.includes('toy') || n.includes('game') || n.includes('play') || n.includes('kid')) return '🎮';
+      if (n.includes('food') || n.includes('restaurant') || n.includes('meal') || n.includes('drink') || n.includes('grocery')) return '🍔';
+      if (n.includes('health') || n.includes('beauty') || n.includes('care') || n.includes('medical') || n.includes('skin')) return '🏥';
+      if (n.includes('edu') || n.includes('course') || n.includes('learn') || n.includes('school') || n.includes('book')) return '🎓';
+      if (n.includes('finance') || n.includes('money') || n.includes('bank') || n.includes('loan') || n.includes('invest')) return '💰';
+      if (n.includes('travel') || n.includes('flight') || n.includes('hotel') || n.includes('tour') || n.includes('trip')) return '✈️';
+      if (n.includes('sport') || n.includes('fitness') || n.includes('gym') || n.includes('outdoor') || n.includes('exercise')) return '⚽';
+      if (n.includes('pet') || n.includes('dog') || n.includes('cat') || n.includes('animal')) return '🐾';
+      if (n.includes('car') || n.includes('auto') || n.includes('vehicle') || n.includes('bike')) return '🚗';
+      if (n.includes('music') || n.includes('instrument') || n.includes('audio') || n.includes('sound')) return '🎵';
+      if (n.includes('video') || n.includes('movie') || n.includes('film') || n.includes('stream')) return '🎬';
+      if (n.includes('art') || n.includes('craft') || n.includes('paint') || n.includes('draw')) return '🎨';
+      if (n.includes('jewel') || n.includes('ring') || n.includes('necklace') || n.includes('watch')) return '💎';
+      if (n.includes('baby') || n.includes('infant') || n.includes('toddler') || n.includes('child')) return '🍼';
+      if (n.includes('garden') || n.includes('plant') || n.includes('flower') || n.includes('outdoor')) return '🌱';
+      return '📦';
+    }
+
+    async function loadHomeCategories() {
+      const container = document.getElementById('homeCategoryList');
+      if (!container) return;
+      try {
+        const res = await fetch('categories_api.php?list=categories');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.categories) && data.categories.length > 0) {
+          container.innerHTML = data.categories.map((cat) => `
+            <div class="col-6 col-md-3">
+              <a href="products.html?category_id=${cat.id}" class="card border-0 shadow-sm text-decoration-none text-dark h-100 text-center p-4">
+                <div class="card-body">
+                  <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mb-3 mx-auto" style="width:80px;height:80px;font-size:2rem;">${categoryIcon(cat.name)}</div>
+                  <h6 class="fw-bold mb-0">${escapeHTML(cat.name)}</h6>
+                </div>
+              </a>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<div class="col-12 text-center text-muted">No categories available.</div>';
+        }
+      } catch (e) {
+        container.innerHTML = '<div class="col-12 text-center text-danger">Failed to load categories.</div>';
+      }
+    }
+
+    async function loadCategoryDropdown() {
+      const menu = document.getElementById('categoryDropdownMenu');
+      if (!menu) return;
+      try {
+        const res = await fetch('categories_api.php?list=categories');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.categories) && data.categories.length > 0) {
+          menu.innerHTML = data.categories.map(cat => `
+            <li><a class="dropdown-item" href="products.html?category_id=${cat.id}">${escapeHTML(cat.name)}</a></li>
+          `).join('');
+        } else {
+          menu.innerHTML = '<li><span class="dropdown-item text-muted">No categories</span></li>';
+        }
+      } catch (e) {
+        menu.innerHTML = '<li><span class="dropdown-item text-muted">Categories unavailable</span></li>';
+      }
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+      });
+    }
+
+    async function loadFeaturedProducts() {
+      const container = document.getElementById('featuredProducts');
+      try {
+        const res = await fetch('featured_products_api.php');
+        const data = await res.json();
+        if (data.success && data.products && data.products.length > 0) {
+          container.innerHTML = data.products.map(p => `
+            <div class="col-6 col-md-4 col-lg-3 d-flex align-items-stretch">
+              <div class="card product-card shadow-sm w-100">
+                <div class="product-img-wrap">
+                  <img src="${p.image_url || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop'}" alt="${escapeHTML(p.name)}" loading="lazy">
+                  <span class="product-badge badge-trending">Trending</span>
+                  <div class="product-actions-overlay">
+                    <a href="product_details.html?product=${p.id}" class="btn btn-quick-view">Quick View</a>
+                    <button class="btn btn-quick-cart add-to-cart" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}" data-image="${p.image_url || ''}">Add to Cart</button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <h5 class="card-title">${escapeHTML(p.name)}</h5>
+                  <p class="seller-badge">Seller: ${escapeHTML(p.seller_name || p.seller_shop || 'Marketplace')}</p>
+                  <p class="price">$${Number(p.price).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</p>
+                  <div class="card-actions">
+                    <a href="product_details.html?product=${p.id}" class="btn-view">View Details</a>
+                    <button class="btn-cart add-to-cart" data-id="${p.id}" data-name="${p.name}" data-price="${p.price}" data-image="${p.image_url || ''}">Add to Cart</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `).join('');
+
+          document.querySelectorAll('.add-to-cart').forEach(btn => {
+            btn.addEventListener('click', async function(e) {
+              const id = this.getAttribute('data-id');
+              const name = this.getAttribute('data-name');
+              try {
+                await requireAuth();
+              } catch (err) {
+                return;
+              }
+              try {
+                const csrf = await window.__csrfPromise;
+                const cartRes = await fetch('cart_api.php', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(await withCsrf({ action: 'add', product_id: id }))
+                });
+                const cartData = await cartRes.json();
+                alert(name + (cartData.success ? ' added to cart!' : ' — ' + (cartData.message || 'Something went wrong')));
+              } catch (err) {
+                alert('Failed to add to cart.');
+              }
+            });
+          });
+        } else {
+          container.innerHTML = '<div class="col-12 text-center text-muted">No featured products yet.</div>';
+        }
+      } catch (err) {
+        container.innerHTML = '<div class="col-12 text-center text-danger">Failed to load featured products.</div>';
+      }
+    }
+
+    async function loadTopSellers() {
+      const container = document.getElementById('topSellers');
+      try {
+        const res = await fetch('top_sellers_api.php');
+        const data = await res.json();
+        if (data.success && data.sellers && data.sellers.length > 0) {
+          container.innerHTML = data.sellers.map(s => {
+            const orders = Number(s.total_orders || 0);
+            return `
+              <div class="col-md-6 col-lg-4 d-flex align-items-stretch">
+                <div class="seller-card w-100">
+                  <img src="https://ui-avatars.com/api/?name=${encodeURIComponent(s.fullname || s.username)}&background=0d6efd&color=fff&size=160" class="seller-avatar" alt="${s.fullname || s.username}">
+                  <h5 class="fw-bold mb-1">${s.fullname || s.username}</h5>
+                  <p class="text-muted small mb-2">${s.shop_name || 'Seller'}</p>
+                  <div class="d-flex justify-content-center gap-3 mb-3">
+                    <span class="badge bg-info text-dark">${orders} orders</span>
+                  </div>
+                  <a href="products.html?store=${s.username}" class="btn btn-outline-primary btn-sm rounded-pill px-3">Visit Store</a>
+                </div>
+              </div>
+            `;
+          }).join('');
+        } else {
+          container.innerHTML = '<div class="col-12 text-center text-muted">No top sellers featured yet.</div>';
+        }
+      } catch (err) {
+        container.innerHTML = '<div class="col-12 text-center text-danger">Failed to load top sellers.</div>';
+      }
+    }
+
+    async function loadBanners() {
+      const container = document.getElementById('bannerContainer');
+      const indicatorsContainer = document.querySelector('#heroCarousel .carousel-indicators');
+      try {
+        const res = await fetch('banners_api.php');
+        const data = await res.json();
+        if (data.success && data.banners && data.banners.length > 0) {
+          const slides = data.banners.map((banner, idx) => `
+            <div class="carousel-item${idx === 0 ? ' active' : ''}">
+              <img src="${banner.image_url}" class="d-block w-100" alt="${banner.title}">
+              <div class="carousel-caption d-none d-md-block">
+                <h3 class="fw-bold">${banner.title}</h3>
+                <p>${banner.body || ''}</p>
+                <a href="products.html" class="btn btn-primary btn-lg rounded-pill px-4">Shop Now</a>
+              </div>
+            </div>
+          `).join('');
+          const indicators = data.banners.map((_, idx) => `
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="${idx}"${idx === 0 ? ' class="active" aria-current="true"' : ''} aria-label="Slide ${idx + 1}"></button>
+          `).join('');
+          container.innerHTML = slides;
+          if (indicatorsContainer) indicatorsContainer.innerHTML = indicators;
+          const carouselEl = document.getElementById('heroCarousel');
+          if (carouselEl) {
+            const existing = bootstrap.Carousel.getInstance(carouselEl);
+            if (existing) existing.dispose();
+            new bootstrap.Carousel(carouselEl, { interval: 4500, ride: 'carousel' });
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load banners:', err);
+      }
+    }
+</script>
+   <footer class="footer py-5 mt-5">
+    <div class="container">
+      <div class="row g-4">
+        <div class="col-md-4">
+          <h5 class="text-white mb-3">Marketplace</h5>
+          <p class="small">Your trusted online marketplace for buying and selling quality products from top sellers worldwide.</p>
+        </div>
+        <div class="col-md-2">
+          <h6 class="text-white mb-3">Quick Links</h6>
+          <ul class="list-unstyled small">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="products.html">Products</a></li>
+            <li><a href="about_us.html">About Us</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </div>
+        <div class="col-md-2">
+          <h6 class="text-white mb-3">Support</h6>
+          <ul class="list-unstyled small">
+            <li><a href="faq.html">FAQ</a></li>
+            <li><a href="refund_return_policy.html">Refund Policy</a></li>
+            <li><a href="terms_condition.html">Terms & Conditions</a></li>
+            <li><a href="privacy_policy.html">Privacy Policy</a></li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h6 class="text-white mb-3">Stay Connected</h6>
+          <p class="small">Subscribe to get special offers and updates.</p>
+          <form class="d-flex" onsubmit="event.preventDefault(); alert('Subscribed!');">
+            <input class="form-control me-2" type="email" placeholder="Enter your email" aria-label="Email">
+            <button class="btn btn-primary rounded-pill px-3" type="submit">Join</button>
+          </form>
+        </div>
+      </div>
+      <hr class="my-4" style="border-color: #343a40;">
+      <div class="text-center small">
+        &copy; 2026 Marketplace. All Rights Reserved.
+      </div>
+    </div>
+</footer>
+<script src="wishlist_guest.js"></script>
+<script src="auth_redirect.js"></script>
+<script src="auto_refresh.js"></script>
+</body>
+</html>

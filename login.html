@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - Marketplace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .login-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            padding: 2rem;
+            max-width: 420px;
+            margin: 2rem auto;
+        }
+        .login-card h2 {
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Footer */
+        .footer { background: #1a1d20; color: #adb5bd; }
+        .footer a { color: #adb5bd; text-decoration: none; }
+        .footer a:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">Marketplace</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="blog.html">Blog</a></li>
+                    <li class="nav-item"><a class="nav-link" href="register.html">Sign-up</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="login-card">
+        <h2>Welcome Back</h2>
+        <div id="loginAlert"></div>
+        <form id="loginForm">
+            <div class="mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-control" name="username" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <input type="password" class="form-control" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Login</button>
+        </form>
+        <p class="text-center mt-3 mb-0">Don't have an account? <a href="register.html">Register here</a></p>
+    </div>
+
+    <footer class="footer py-5 mt-5">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-md-4">
+            <h5 class="text-white mb-3">Marketplace</h5>
+            <p class="small">Your trusted online marketplace for buying and selling quality products from top sellers worldwide.</p>
+          </div>
+          <div class="col-md-2">
+            <h6 class="text-white mb-3">Quick Links</h6>
+            <ul class="list-unstyled small">
+              <li><a href="index.html">Home</a></li>
+              <li><a href="products.html">Products</a></li>
+              <li><a href="about_us.html">About Us</a></li>
+              <li><a href="contact.html">Contact</a></li>
+            </ul>
+          </div>
+          <div class="col-md-2">
+            <h6 class="text-white mb-3">Support</h6>
+            <ul class="list-unstyled small">
+              <li><a href="faq.html">FAQ</a></li>
+              <li><a href="refund_return_policy.html">Refund Policy</a></li>
+              <li><a href="terms_condition.html">Terms & Conditions</a></li>
+              <li><a href="privacy_policy.html">Privacy Policy</a></li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h6 class="text-white mb-3">Stay Connected</h6>
+            <p class="small">Subscribe to get special offers and updates.</p>
+            <form class="d-flex" onsubmit="event.preventDefault(); alert('Subscribed!');">
+              <input class="form-control me-2" type="email" placeholder="Enter your email" aria-label="Email">
+              <button class="btn btn-primary rounded-pill px-3" type="submit">Join</button>
+            </form>
+          </div>
+        </div>
+        <hr class="my-4" style="border-color: #343a40;">
+        <div class="text-center small">
+          &copy; 2026 Marketplace. All Rights Reserved.
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="csrf.js"></script>
+    <script>
+        let pendingPollInterval = null;
+
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const alertBox = document.getElementById('loginAlert');
+            const formData = new FormData(this);
+            const data = {
+                username: formData.get('username').trim(),
+                password: formData.get('password')
+            };
+
+            try {
+                const csrf = await window.__csrfPromise;
+                const res = await fetch('auth_api.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrf || ''
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.status === 'success') {
+                    if (pendingPollInterval) clearInterval(pendingPollInterval);
+                    const redirect = result.redirect || new URLSearchParams(window.location.search).get('redirect') || 'index.html';
+                    window.location.href = redirect;
+                } else {
+                    const msg = result.message || 'Login failed.';
+                    alertBox.innerHTML = '<div class="alert alert-danger">' + msg + '</div>';
+                    if (/pending|inactive|not active|not approved/i.test(msg)) {
+                        startPendingPoll(data);
+                    }
+                }
+            } catch (err) {
+                alertBox.innerHTML = '<div class="alert alert-danger">Network error. Please try again.</div>';
+            }
+        });
+
+        function startPendingPoll(data) {
+            if (pendingPollInterval) clearInterval(pendingPollInterval);
+            const alertBox = document.getElementById('loginAlert');
+            let seconds = 0;
+            pendingPollInterval = setInterval(async () => {
+                seconds += 3;
+                alertBox.innerHTML = '<div class="alert alert-warning">Your account is pending admin approval. Checking again in ' + seconds + 's...</div>';
+                try {
+                    const csrf = await window.__csrfPromise;
+                    const res = await fetch('auth_api.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrf || ''
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    const result = await res.json();
+                    if (result.status === 'success') {
+                        clearInterval(pendingPollInterval);
+                        const redirect = result.redirect || 'index.html';
+                        window.location.href = redirect;
+                    }
+                } catch (err) {
+                    // keep polling
+                }
+            }, 3000);
+        }
+
+        // Pre-fill redirect if present
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('redirect')) {
+            const redirectInput = document.createElement('input');
+            redirectInput.type = 'hidden';
+            redirectInput.name = 'redirect';
+            redirectInput.value = urlParams.get('redirect');
+            document.getElementById('loginForm').appendChild(redirectInput);
+        }
+    </script>
+<script src="auto_refresh.js"></script>
+</body>
+</html>

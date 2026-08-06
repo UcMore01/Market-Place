@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Order Details - Marketplace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .footer { background: #1a1d20; color: #adb5bd; }
+        .footer a { color: #adb5bd; text-decoration: none; }
+        .footer a:hover { color: #fff; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="index.html">Marketplace</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="products.html">Products</a></li>
+                    <li class="nav-item"><a class="nav-link" href="orders.html">Orders</a></li>
+                    <li class="nav-item"><a class="nav-link" href="login.html">Login</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold mb-0">Order Details</h2>
+            <a href="orders.html" class="btn btn-outline-secondary">&larr; Back to Orders</a>
+        </div>
+        <div id="content">
+            <div class="text-center text-muted py-5">Loading order...</div>
+        </div>
+    </div>
+
+    <footer class="footer py-5 mt-5">
+      <div class="container">
+        <div class="row g-4">
+          <div class="col-md-4">
+            <h5 class="text-white mb-3">Marketplace</h5>
+            <p class="small">Your trusted online marketplace for buying and selling quality products from top sellers worldwide.</p>
+          </div>
+          <div class="col-md-2">
+            <h6 class="text-white mb-3">Quick Links</h6>
+            <ul class="list-unstyled small">
+              <li><a href="index.html">Home</a></li>
+              <li><a href="products.html">Products</a></li>
+              <li><a href="about_us.html">About Us</a></li>
+              <li><a href="contact.html">Contact</a></li>
+            </ul>
+          </div>
+          <div class="col-md-2">
+            <h6 class="text-white mb-3">Support</h6>
+            <ul class="list-unstyled small">
+              <li><a href="faq.html">FAQ</a></li>
+              <li><a href="refund_return_policy.html">Refund Policy</a></li>
+              <li><a href="terms_condition.html">Terms & Conditions</a></li>
+              <li><a href="privacy_policy.html">Privacy Policy</a></li>
+            </ul>
+          </div>
+          <div class="col-md-4">
+            <h6 class="text-white mb-3">Stay Connected</h6>
+            <p class="small">Subscribe to get special offers and updates.</p>
+            <form class="d-flex" onsubmit="event.preventDefault(); alert('Subscribed!');">
+              <input class="form-control me-2" type="email" placeholder="Enter your email" aria-label="Email">
+              <button class="btn btn-primary rounded-pill px-3" type="submit">Join</button>
+            </form>
+          </div>
+        </div>
+        <hr class="my-4" style="border-color: #343a40;">
+        <div class="text-center small">
+          &copy; 2026 Marketplace. All Rights Reserved.
+        </div>
+      </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function escapeHTML(str) {
+            return String(str || '').replace(/[&<>"']/g, function (m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m];
+            });
+        }
+        function money(n) {
+            return '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const orderId = params.get('order_id') || params.get('id');
+
+        async function load() {
+            const content = document.getElementById('content');
+            if (!orderId) {
+                content.innerHTML = '<div class="alert alert-danger">No order ID provided.</div>';
+                return;
+            }
+            try {
+                const res = await fetch('order_details_api.php?order_id=' + encodeURIComponent(orderId));
+                if (res.status === 401) {
+                    window.location.href = 'login.html?redirect=' + encodeURIComponent('order_details.html?order_id=' + orderId);
+                    return;
+                }
+                const data = await res.json();
+                if (data.status !== 'success') {
+                    content.innerHTML = '<div class="alert alert-danger">' + escapeHTML(data.message || 'Failed to load order.') + '</div>';
+                    return;
+                }
+                render(data.order);
+            } catch (err) {
+                content.innerHTML = '<div class="alert alert-danger">Failed to load order.</div>';
+            }
+        }
+
+        function render(order) {
+            const items = (order.items || []).map(i => `
+                <tr>
+                    <td>${escapeHTML(i.name)}</td>
+                    <td class="text-center">${i.quantity}</td>
+                    <td class="text-end">${money(i.price)}</td>
+                    <td class="text-end">${money(i.price * i.quantity)}</td>
+                </tr>
+            `).join('');
+
+            const tracking = (order.tracking || []).map((t, idx) => `
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${escapeHTML(t.status)}</strong>
+                        ${t.location ? '<br><small class="text-muted">' + escapeHTML(t.location) + '</small>' : ''}
+                    </div>
+                    <small class="text-muted">${new Date(t.updated_at).toLocaleString()}</small>
+                </li>
+            `).join('');
+
+            document.getElementById('content').innerHTML = `
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-3"><p class="text-muted mb-1">Order #</p><h6>#${order.order_id}</h6></div>
+                            <div class="col-md-3"><p class="text-muted mb-1">Status</p><h6>${escapeHTML(order.status || 'N/A')}</h6></div>
+                            <div class="col-md-3"><p class="text-muted mb-1">Placed</p><h6>${new Date(order.created_at).toLocaleDateString()}</h6></div>
+                            <div class="col-md-3"><p class="text-muted mb-1">Est. Delivery</p><h6>${order.estimated_delivery ? new Date(order.estimated_delivery).toLocaleDateString() : '—'}</h6></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header fw-bold">Items</div>
+                    <div class="card-body">
+                        <table class="table mb-0">
+                            <thead>
+                                <tr><th>Product</th><th class="text-center">Qty</th><th class="text-end">Price</th><th class="text-end">Total</th></tr>
+                            </thead>
+                            <tbody>${items}</tbody>
+                            <tfoot>
+                                <tr><th colspan="3" class="text-end">Total</th><th class="text-end">${money(order.total_price)}</th></tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header fw-bold">Tracking History</div>
+                    <ul class="list-group list-group-flush">
+                        ${tracking || '<li class="list-group-item text-muted">No tracking updates yet.</li>'}
+                    </ul>
+                </div>
+            `;
+        }
+
+        document.addEventListener('DOMContentLoaded', load);
+    </script>
+<script src="auto_refresh.js"></script>
+</body>
+</html>
